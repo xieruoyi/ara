@@ -114,7 +114,7 @@ void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
             //data is loaded from memory into a vector register and then processed. It loads 64-bit elements from memory 
             //into vector register v12 and then multiplies elements in vector register v8 by a scalar value t0, 
             //storing the result in vector register v0.
-    
+
 
     asm volatile("vmv.v.v v10, v18");
     asm volatile("vfmul.vf v2, v10, %0" ::"f"(t0));
@@ -275,6 +275,13 @@ void fconv2d_vec_4xC_3x3(double *o, double *i, double *f, int64_t C,
   asm volatile("fld %1, (%0);" : "+&r"(f_), "=&f"(t2));
       //Another floating-point value is loaded from the updated memory address into the floating-point variable t2.
       //This time, there is no addition operation to increment the pointer.
+
+//In many signal processing or image processing algorithms like convolution, multiple elements of a filter kernel are 
+//used to perform calculations on the input data. Each element of the filter kernel needs to be loaded into a separate 
+//variable or register so that it can be used in parallel calculations or operations. So, t0, t1, and t2 are likely 
+//being used to hold different coefficients of a filter kernel that are used simultaneously in the subsequent computations.
+//In short, each t0, t1, and t2 are holding different values that are fetched sequentially from the memory. 
+//These values are then likely used in parallel to perform computations, which is a common approach to optimize performance in such algorithms.
 
   // Fetch 4 + F - 1 - 2 rows of the input matrix
   // Compute on C + F - 1 elements, instead of C elements, to cover the latency
