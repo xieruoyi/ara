@@ -242,27 +242,39 @@ void fconv2d_vec_4xC_slice_preload_3x3(double *i, int64_t C, int64_t F) {
 void fconv2d_vec_4xC_3x3(double *o, double *i, double *f, int64_t C,
                          int64_t F) {
 
-  // Temporary variables
+  // Temporary variables to hold the filter coefficients during each iteration
   double t0, t1, t2;
 
   // Helper variables
-  int64_t ldo = C << 3;
+  //ldo ldi ldf are offsets for iterating through the output, input, and filter matrices.
+  int64_t ldo = C << 3; 
   int64_t ldi = (C + F - 1) << 3;
   int64_t ldf = F << 3;
-  double *f_;
+  double *f_; //A temporary pointer for iterating through the filter matrix.
 
   // Fetch C + F - 1 elements (padding included)
   asm volatile("vsetvli zero, %0, e64, m2, ta, ma" ::"r"(C + F - 1));
+      // this line is used to set the vector length and configuration for subsequent vector operations
   f_ = f;
   // Fetch the first column of the filter, and start calculating its
   // contribution on the four output rows (v0, v2, v4, v6)
-  asm volatile("fld %1, (%0); add %0, %0, %2"
+  asm volatile("fld %1, (%0); add %0, %0, %2" //fld is used to load a floating-point value from the memory address pointed to by (%0) into the floating-point register %1. Add is used to update the memory address pointer after the load operation.
                : "+&r"(f_), "=&f"(t0)
-               : "r"(ldf));
+        //The + indicates that f_ is a read-write operand. & specifies that this operand is early-clobbered, meaning it should not be used as an input operand for another instruction
+        // in this inline assembly block. "r" means that the operand is held in a general-purpose register. f_ is the C variable (a pointer) associated with the operand.
+        //"=&f"(t0): =& indicates a write-only operand that is also early-clobbered. "f" denotes that the operand is held in a floating-point register. 
+        //t0 is a temporary floating-point variable in the C code that will hold the loaded value.
+               : "r"(ldf));//Specifies an input operand held in a general-purpose register. 
+                           //ldf is a C variable that is used as an operand for the add instruction.
+
+      //Loads a floating-point value from the memory address pointed to by f_ into the floating-point variable t0.
+      //Then it increments the f_ pointer by ldf to point to the next element in the memory.
   asm volatile("fld %1, (%0); add %0, %0, %2"
                : "+&r"(f_), "=&f"(t1)
                : "r"(ldf));
   asm volatile("fld %1, (%0);" : "+&r"(f_), "=&f"(t2));
+      //Another floating-point value is loaded from the updated memory address into the floating-point variable t2.
+      //This time, there is no addition operation to increment the pointer.
 
   // Fetch 4 + F - 1 - 2 rows of the input matrix
   // Compute on C + F - 1 elements, instead of C elements, to cover the latency
