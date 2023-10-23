@@ -16,6 +16,18 @@
 
 // Author: Matteo Perotti
 
+
+//vmv Vector Register Move.
+//vle64 Vector Load Element. It's used for loading 64-bit elements from memory into a vector register.
+//vfmul Vector Floating-Point Multiply
+//vfmacc Vector Floating-Point Multiply-Add with a scalar or vector. It multiplies each element in a source
+      //vector by a scalar or another vector and adds the product to the corresponding element in another source vector.
+//fld Floating-Point Load Double. It loads a 64-bit double-precision floating-point value into a floating-point register.
+//vslidedown  It shifts elements down in a vector register, and the vacated positions at the top are filled with zeroes or a specified value.
+//vsetvli Set Vector Length and Vector Configuration. It sets the vector length and the type of the elements for subsequent vector operations.
+//vse64 Vector Store Element. It stores 64-bit elements from a vector register to memory.
+
+
 #include "fconv2d.h"
       //o = output matrix i = input matrix f = filter or kernel R = rows C = columns F = Filter's dimension with a stride or padding
 void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
