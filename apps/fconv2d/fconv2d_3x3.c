@@ -17,7 +17,7 @@
 // Author: Matteo Perotti
 
 #include "fconv2d.h"
-
+      //o = output matrix i = input matrix f = filter or kernel R = rows C = columns F = Filter's dimension with a stride or padding
 void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
                  int64_t F) {
   // We work on 4 rows of the output matrix at once
@@ -58,7 +58,10 @@ void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
 
   // Iterate over the output rows
   for (int64_t r = block_size_o; r < R; r += block_size_o) {
-
+    //The loop is iterating over blocks of rows, starting from block_size_o and incrementing 
+    //by block_size_o each iteration until it reaches R. Within each iteration of the loop, it 
+    //seems to be performing a portion of the 2D convolution for that specific block of rows.
+    
     // The first F-1 rows have already been loaded by
     // fconv2d_vec_4xC_slice_init()
 
@@ -66,6 +69,23 @@ void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
 
     // Fetch C + F - 1 elements (padding included)
     asm volatile("vsetvli zero, %0, e64, m2, ta, ma" ::"r"(C + F - 1));
+            //This sets the vector length to C + F - 1. The vsetvli instruction sets the vector length 
+            //to the smallest legal value greater or equal to the given vl that doesn’t exceed the
+            //architectural maximum length.
+            //zero is a RISC-V register, always holding the value 0. It’s being used here as the 
+            //destination register for the vsetvli instruction, essentially discarding the
+            //returned value (which is the previous vector length).
+            //%0 is a placeholder for the first output operand (described below). It's where the C + F - 1
+            //value will be inserted when the assembly code is executed.
+            //e64 specifies the element width for the vector operations. In this case, it is 64 bits.
+            //m2 is a vector register configuration option that specifies the operating mode for 
+            //the masking registers.
+            //ta and ma are the type agnostic and mask agnostic options, respectively, to tell 
+            //the instruction that it does not change its behavior depending on the element 
+            //type and does not require a mask register.
+            //This is an operand, specifying both an input and an output (due to the +).
+            //r means the operand is a register operand.
+            //C + F - 1 is a calculation done in C/C++ and then passed into the assembly language code at %0.
     f_ = f;
 
     // Fetch the first column of the filter, and start calculating its
@@ -75,18 +95,29 @@ void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
     // Compute on C + F - 1 elements, instead of C elements, to cover the
     // latency of the load instructions
     asm volatile("vmv.v.v v8, v16");
+            //This instruction copies data from one vector register to another (v16 to v8), 
+            //likely part of a preparation step for processing the current block of rows.
     asm volatile("vle64.v v12, (%0); add %0, %0, %1" : "+&r"(i__) : "r"(ldi));
     asm volatile("vfmul.vf v0, v8, %0" ::"f"(t0));
+            //data is loaded from memory into a vector register and then processed. It loads 64-bit elements from memory 
+            //into vector register v12 and then multiplies elements in vector register v8 by a scalar value t0, 
+            //storing the result in vector register v0.
+    
 
     asm volatile("vmv.v.v v10, v18");
     asm volatile("vfmul.vf v2, v10, %0" ::"f"(t0));
     asm volatile("vle64.v v14, (%0); add %0, %0, %1" : "+&r"(i__) : "r"(ldi));
     asm volatile("vfmacc.vf v0, %0, v10" ::"f"(t1));
+            //These are part of the core computation, performing multiply-accumulate operations using elements 
+            //in vector registers and a scalar value, effectively calculating part of the convolution.
 
     asm volatile("vfmacc.vf v2, %0, v12" ::"f"(t1));
     asm volatile("vle64.v v16, (%0); add %0, %0, %1" : "+&r"(i__) : "r"(ldi));
     asm volatile("vfmacc.vf v0, %0, v12" ::"f"(t2));
     asm volatile("vslidedown.vi v20, v8,  1");
+            //This instruction slides elements within a vector register down by a given immediate value. 
+            //It's likely part of aligning data for the next step of the convolution operation.
+    
     asm volatile("vfmul.vf v4, v12, %0" ::"f"(t0));
 
     asm volatile("vle64.v v18, (%0); add %0, %0, %1" : "+&r"(i__) : "r"(ldi));
