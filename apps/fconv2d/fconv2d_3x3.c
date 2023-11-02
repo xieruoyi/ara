@@ -67,6 +67,11 @@ void fconv2d_3x3(double *o, double *i, double *f, int64_t R, int64_t C,
                : "+&r"(f_), "=&f"(t1)
                : "r"(ldf));
   asm volatile("fld %1, (%0);" : "+&r"(f_), "=&f"(t2));
+//Loading a value from memory (f_) into a floating-point register (t0).
+//Advancing the memory pointer (f_) by some offset (ldf).
+//Repeating the two steps for another floating-point register (t1).
+//Loading one more value from the advanced memory pointer (f_) into a third floating-point register (t2).
+
 
   // Iterate over the output rows
   for (int64_t r = block_size_o; r < R; r += block_size_o) {
