@@ -59,7 +59,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   //  Memory Regions  //
   //////////////////////
 
-  localparam NrAXIMasters = 1; // Actually masters, but slaves on the crossbar
+  localparam NrAXIMasters = 2; // Actually masters, but slaves on the crossbar
 
   typedef enum int unsigned {
     L2MEM = 0,
@@ -92,6 +92,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   localparam AXiWideStrbWidth   = AxiWideDataWidth / 8;
 
   localparam AxiSocIdWidth  = AxiIdWidth - $clog2(NrAXIMasters);
+  //AxiIdWidth   = 5    AxiSocIdWidth = 5 - 1 = 4
   localparam AxiCoreIdWidth = AxiSocIdWidth - 1;
 
   // Internal types
@@ -127,15 +128,18 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   ////////////////
 
   localparam axi_pkg::xbar_cfg_t XBarCfg = '{
-    NoSlvPorts        : NrAXIMasters,
+    NoSlvPorts        : NrAXIMasters, //2
     NoMstPorts        : NrAXISlaves,
     MaxMstTrans       : 4,
     MaxSlvTrans       : 4,
     FallThrough       : 1'b0,
     LatencyMode       : axi_pkg::CUT_MST_PORTS,
     PipelineStages    : 0,
-    AxiIdWidthSlvPorts: AxiSocIdWidth,
-    AxiIdUsedSlvPorts : AxiSocIdWidth,
+    AxiIdWidthSlvPorts: AxiSocIdWidth, //4
+    AxiIdUsedSlvPorts : AxiSocIdWidth, //4
+    //AxiIdWidth   = 5    AxiSocIdWidth = 5 - 1 = 4
+    //AxiSocIdWidth = 5 - 0 = 5 when NrAXIMaster = 1;
+
     UniqueIds         : 1'b0,
     AxiAddrWidth      : AxiAddrWidth,
     AxiDataWidth      : AxiWideDataWidth,
